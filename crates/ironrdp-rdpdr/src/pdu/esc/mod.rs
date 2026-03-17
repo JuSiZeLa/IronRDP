@@ -769,13 +769,18 @@ impl rpce::HeaderlessDecode for ListReadersCall {
 pub struct ListReadersReturn {
     pub return_code: ReturnCode,
     pub readers: Vec<String>,
+    pub encoding: CharacterSet,
 }
 
 impl ListReadersReturn {
     const NAME: &'static str = "ListReaders_Return";
 
-    pub fn new(return_code: ReturnCode, readers: Vec<String>) -> rpce::Pdu<Self> {
-        rpce::Pdu(Self { return_code, readers })
+    pub fn new(return_code: ReturnCode, readers: Vec<String>, encoding: CharacterSet) -> rpce::Pdu<Self> {
+        rpce::Pdu(Self {
+            return_code,
+            readers,
+            encoding,
+        })
     }
 }
 
@@ -786,12 +791,12 @@ impl rpce::HeaderlessEncode for ListReadersReturn {
         let readers_length: u32 = cast_length!(
             "ListReadersReturn",
             "readers",
-            encoded_multistring_len(&self.readers, CharacterSet::Unicode)
+            encoded_multistring_len(&self.readers, self.encoding)
         )?;
         let mut index = 0;
         ndr::encode_ptr(Some(readers_length), &mut index, dst)?;
         dst.write_u32(readers_length);
-        write_multistring_to_cursor(dst, &self.readers, CharacterSet::Unicode)?;
+        write_multistring_to_cursor(dst, &self.readers, self.encoding)?;
         Ok(())
     }
 
@@ -803,7 +808,7 @@ impl rpce::HeaderlessEncode for ListReadersReturn {
         self.return_code.size() // dst.write_u32(self.return_code.into());
         + ndr::ptr_size(true) // ndr::encode_ptr(...);
         + 4 // dst.write_u32(readers_length);
-        + encoded_multistring_len(&self.readers, CharacterSet::Unicode) // write_multistring_to_cursor(...);
+        + encoded_multistring_len(&self.readers, self.encoding) // write_multistring_to_cursor(...);
     }
 }
 
